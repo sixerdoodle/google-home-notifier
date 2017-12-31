@@ -1,12 +1,11 @@
 var express = require('express');
 var googlehome = require('./google-home-notifier');
-//var ngrok = require('ngrok');
 var bodyParser = require('body-parser');
 var app = express();
 const serverPort = 8091; // default port
 
-var deviceName = 'Chromecast-Audio-d8f49758a82ee3ebac3e82107d86831c';
-var ip = '192.168.1.52'; // default IP
+var deviceName = 'Chromecast-Audio-xxxxxx';
+var ip = 'xx.xx.xx.xx'; // default IP
 
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
