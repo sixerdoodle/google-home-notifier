@@ -1,12 +1,12 @@
 var express = require('express');
 var googlehome = require('./google-home-notifier');
-var ngrok = require('ngrok');
+//var ngrok = require('ngrok');
 var bodyParser = require('body-parser');
 var app = express();
 const serverPort = 8091; // default port
 
-var deviceName = 'Google Home';
-var ip = '192.168.1.20'; // default IP
+var deviceName = 'Chromecast-Audio-d8f49758a82ee3ebac3e82107d86831c';
+var ip = '192.168.1.52'; // default IP
 
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -94,7 +94,7 @@ app.get('/google-home-notifier', function (req, res) {
 })
 
 app.listen(serverPort, function () {
-  ngrok.connect(serverPort, function (err, url) {
+    //connect(serverPort, function (err, url) {
     console.log('Endpoints:');
     console.log('    http://' + ip + ':' + serverPort + '/google-home-notifier');
     console.log('    ' + url + '/google-home-notifier');
