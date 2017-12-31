@@ -4,6 +4,8 @@ var mdns = require('mdns');
 var browser = mdns.createBrowser(mdns.tcp('googlecast'));
 var deviceAddress;
 var language;
+var CastStatus = 'DONE'; // added
+var primed = 0;
 
 var device = function(name, lang = 'en') {
     device = name;
@@ -65,6 +67,7 @@ var play = function(mp3_url, callback) {
 
 var getSpeechUrl = function(text, host, callback) {
   googletts(text, language, 1, 1000, googlettsaccent).then(function (url) {
+console.log(url);
     onDeviceUp(host, url, function(res){
       callback(res)
     });
@@ -89,10 +92,26 @@ var onDeviceUp = function(host, url, callback) {
         contentType: 'audio/mp3',
         streamType: 'BUFFERED' // or LIVE
       };
-      player.load(media, { autoplay: true }, function(err, status) {
-        client.close();
-        callback('Device notified');
-      });
+	  primed = 0;
+	  CastStatus = "DONE"
+	  player.load(media, { autoplay: true }, function(err, status) {
+		//client.close();
+		if(err !== null && typeof err === 'object'){
+			console.log('Device notified error:'+err.message);
+			if(err.message=='Load failed'){primed = 0;CastStatus = "DONE";callback('Device done');}
+		}
+	  });
+	  // added status
+		player.on('status', status => {
+			if(status !== null && typeof status === 'object'){
+				console.log('status broadcast player State=%s primed=%i', status.playerState,primed);
+				CastStatus = status.playerState;
+				if((status.playerState == "IDLE") && (primed ==1) ){primed = 0;CastStatus = "DONE";callback('Device done');}
+				if(status.playerState == "BUFFERING")primed = 1;
+			}
+		});
+		player.on('close', function(){console.log('player close');client.close();});
+		player.on('error', function(){console.log('player error');});
     });
   });
 
@@ -101,6 +120,12 @@ var onDeviceUp = function(host, url, callback) {
     client.close();
     callback('error');
   });
+  
+	client.on('close', ()  => {
+		console.info("Client Closed");
+
+	});
+  
 };
 
 exports.ip = ip;
@@ -108,3 +133,4 @@ exports.device = device;
 exports.accent = accent;
 exports.notify = notify;
 exports.play = play;
+exports.CastStatus = CastStatus;
