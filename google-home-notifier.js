@@ -1,7 +1,7 @@
 var Client = require('castv2-client').Client;
 var DefaultMediaReceiver = require('castv2-client').DefaultMediaReceiver;
 var mdns = require('mdns');
-var browser = mdns.createBrowser(mdns.tcp('googlecast'));
+
 var deviceAddress;
 var language;
 var CastStatus = 'DONE'; // added
@@ -10,6 +10,7 @@ var primed = 0;
 var device = function(name, lang = 'en') {
     device = name;
     language = lang;
+	deviceAddress = null;	// null the address if we specified a device name so we forace a look up
     return this;
 };
 
@@ -27,18 +28,23 @@ var accent = function(accent) {
 
 var notify = function(message, callback) {
   if (!deviceAddress){
+	console.log('No device');
+	var browser = mdns.createBrowser(mdns.tcp('googlecast'));
     browser.start();
     browser.on('serviceUp', function(service) {
-      console.log('Device "%s" at %s:%d', service.name, service.addresses[0], service.port);
-      if (service.name.includes(device.replace(' ', '-'))){
-        deviceAddress = service.addresses[0];
+      console.log('Found: "%s/%s" at %s:%d', service.name,service.txtRecord.fn, service.addresses[0], service.port);
+      if (service.txtRecord.fn == device){
+		deviceAddress = service.addresses[0];
+		console.log('selected:' + service.txtRecord.fn + " " + deviceAddress);
         getSpeechUrl(message, deviceAddress, function(res) {
           callback(res);
-        });
+        }); // end getSpeechUrl
       }
-      browser.stop();
-    });
+      browser.stop();   // note, actually gets here before all the serviceUp calls complete, but seems to work OK anyway.  no way to tell when serviceUp is done
+						// finding new services
+    });  // end browser.on
   }else {
+	console.log('reuse device: '+deviceAddress);
     getSpeechUrl(message, deviceAddress, function(res) {
       callback(res);
     });
@@ -47,11 +53,14 @@ var notify = function(message, callback) {
 
 var play = function(mp3_url, callback) {
   if (!deviceAddress){
+	console.log('No device');
+	var browser = mdns.createBrowser(mdns.tcp('googlecast'));
     browser.start();
     browser.on('serviceUp', function(service) {
-      console.log('Device "%s" at %s:%d', service.name, service.addresses[0], service.port);
-      if (service.name.includes(device.replace(' ', '-'))){
-        deviceAddress = service.addresses[0];
+      console.log('Found: "%s/%s" at %s:%d', service.name,service.txtRecord.fn, service.addresses[0], service.port);
+      if (service.txtRecord.fn == device){
+		deviceAddress = service.addresses[0];
+		console.log('selected:' + service.txtRecord.fn + " " + deviceAddress);
         getPlayUrl(mp3_url, deviceAddress, function(res) {
           callback(res);
         });
@@ -59,6 +68,7 @@ var play = function(mp3_url, callback) {
       browser.stop();
     });
   }else {
+	console.log('reuse device: '+deviceAddress);
     getPlayUrl(mp3_url, deviceAddress, function(res) {
       callback(res);
     });
@@ -66,8 +76,8 @@ var play = function(mp3_url, callback) {
 };
 
 var getSpeechUrl = function(text, host, callback) {
-  googletts(text, language, 1, 1000, googlettsaccent).then(function (url) {
-console.log(url);
+	googletts(text, language, 1, 1000, googlettsaccent).then(function (url) {
+	console.log(url);
     onDeviceUp(host, url, function(res){
       callback(res)
     });
